@@ -1,23 +1,30 @@
 import { Token, TokenType } from "./lexer";
 
 export enum NodeType {
-  BinaryExpression,
-  FunctionCall,
-  Number,
-  IfStatement,
-  WhileStatement,
-  FunctionDeclaration,
-  ReturnStatement,
-  VariableDeclaration,
-  Program
+  BinaryExpression = 'BinaryExpression',
+  FunctionCall = 'FunctionCall',
+  Number = 'Number',
+  IfStatement = 'IfStatement',
+  WhileStatement = 'WhileStatement',
+  FunctionDeclaration = 'FunctionDeclaration',
+  ReturnStatement = 'ReturnStatement',
+  VariableDeclaration = 'VariableDeclaration',
+  Program = 'Program',
+  Identifier = 'Identifier'
 }
 
 interface Node {
   type: NodeType;
 }
 
-export type Statement = IfStatementNode | WhileStatementNode | FunctionDeclarationNode | VariableDeclarationNode | ReturnStatementNode;
-export type Expression = BinaryExpressionNode | NumberNode | FunctionCallNode;
+export type Expression = BinaryExpressionNode | NumberNode | FunctionCallNode | IdentifierNode;
+
+export interface IdentifierNode extends Node {
+  type: NodeType.Identifier;
+  name: string;
+}
+
+export type Statement = IfStatementNode | WhileStatementNode | FunctionDeclarationNode | VariableDeclarationNode | ReturnStatementNode | Expression;
 
 export interface IfStatementNode extends Node {
   type: NodeType.IfStatement;
@@ -96,7 +103,7 @@ export interface Program {
 */
 
 export class Parser {
-  parse(tokens: Token[]): Node {
+  parse(tokens: Token[]): Program {
     return this.parseProgram(tokens);
   }
 
@@ -107,22 +114,28 @@ export class Parser {
   private parseStatements(tokens: Token[]): Statement[] {
     const statements: Statement[] = [];
     while (tokens.length > 0) {
-      const token = tokens[0];
-      if (token.type === TokenType.Keyword && token.value === 'let') {
-        statements.push(this.parseVariableDeclaration(tokens));
-      } else if (token.type === TokenType.Keyword && token.value === 'if') {
-        statements.push(this.parseIfStatement(tokens));
-      } else if (token.type === TokenType.Keyword && token.value === 'while') {
-        statements.push(this.parseWhileStatement(tokens));
-      } else if (token.type === TokenType.Keyword && token.value === 'function') {
-        statements.push(this.parseFunctionDeclaration(tokens));
-      } else if (token.type === TokenType.Keyword && token.value === 'return') {
-        statements.push(this.parseReturnStatement(tokens));
-      } else {
-        throw new Error('Invalid token');
-      }
+      statements.push(this.parseStatement(tokens));
     }
     return statements;
+  }
+
+  private parseStatement(tokens: Token[]): Statement {
+    const token = tokens[0];
+    if (token.type === TokenType.Keyword && token.value === 'let') {
+      return this.parseVariableDeclaration(tokens);
+    } else if (token.type === TokenType.Keyword && token.value === 'if') {
+      return this.parseIfStatement(tokens);
+    } else if (token.type === TokenType.Keyword && token.value === 'while') {
+      return this.parseWhileStatement(tokens);
+    } else if (token.type === TokenType.Keyword && token.value === 'function') {
+      return this.parseFunctionDeclaration(tokens);
+    } else if (token.type === TokenType.Keyword && token.value === 'return') {
+      return this.parseReturnStatement(tokens);
+    } else if (isExpressionPrefix(tokens)) {
+      return this.parseExpression(tokens);
+    } else {
+      throw new Error(`Unexpected token: ${token.value}`);
+    }
   }
 
   private parseReturnStatement(tokens: Token[]): ReturnStatementNode {
@@ -135,7 +148,7 @@ export class Parser {
     tokens.shift();
     const name = tokens.shift()!.value;
     if (tokens.shift()!.value !== '(') {
-      throw new Error('Expected opening paranthesis');
+      throw new Error('Expected opening parenthesis');
     }
     const parameters: string[] = [];
     while (tokens[0].value !== ')') {
@@ -149,8 +162,9 @@ export class Parser {
       throw new Error('Expected opening brace');
     }
     const body: Statement[] = [];
-    while (tokens[0].value !== '}') {
-      body.push(this.parseStatements(tokens)[0]);
+    while ((tokens[0] as any).value !== '}') {
+      const statement = this.parseStatement(tokens);
+      body.push(statement);
     }
     tokens.shift();
     return { type: NodeType.FunctionDeclaration, name, parameters, body };
@@ -198,9 +212,9 @@ export class Parser {
     return this.parseAddition(tokens);
   }
 
-  private parseAddition(tokens: Token[]): BinaryExpressionNode|Node {
+  private parseAddition(tokens: Token[]): Expression {
     let node = this.parseMultiplication(tokens);
-    while (tokens.length > 0 && (tokens[0].value === '+' || tokens[0].value === '-')) {
+    while (isExpressionPrefix(tokens) && (tokens[0].value === '+' || tokens[0].value === '-')) {
       const operator = tokens.shift()!;
       const right = this.parseMultiplication(tokens);
       node = { type: NodeType.BinaryExpression, operator, left: node, right };
@@ -208,9 +222,9 @@ export class Parser {
     return node;
   }
 
-  private parseMultiplication(tokens: Token[]): BinaryExpressionNode|Node {
-    let node: Node|BinaryExpressionNode = this.parseNumber(tokens);
-    while (tokens.length > 0 && (tokens[0].value === '*' || tokens[0].value === '/')) {
+  private parseMultiplication(tokens: Token[]): Expression {
+    let node: Expression = this.parseNumber(tokens);
+    while (isExpressionPrefix(tokens) && (tokens[0].value === '*' || tokens[0].value === '/')) {
       const operator = tokens.shift()!;
       const right = this.parseNumber(tokens);
       node = { type: NodeType.BinaryExpression, operator, left: node, right };
@@ -218,18 +232,34 @@ export class Parser {
     return node;
   }
 
-  private parseNumber(tokens: Token[]): Node|NumberNode {
+  private parseNumber(tokens: Token[]): Expression {
     const token = tokens.shift()!;
-    if (token.type === TokenType.Paranthesis && token.value === '(') {
+    if (token.type === TokenType.Parenthesis && token.value === '(') {
       const node = this.parseAddition(tokens);
       if (tokens.shift()!.value !== ')') {
-        throw new Error('Expected closing paranthesis');
+        throw new Error('Expected closing parenthesis');
       }
       return node;
     }
-    if (token.type !== TokenType.Number) {
-      throw new Error('Invalid token');
+    if (token.type === TokenType.Identifier) {
+      return { type: NodeType.Identifier, name: token.value };
     }
     return { type: NodeType.Number, value: parseFloat(token.value) };
   }
 }
+
+const expressionTokens = new Set([
+  TokenType.Number,
+  TokenType.Identifier,
+  TokenType.Parenthesis,
+  TokenType.Operator,
+]);
+
+const isExpressionPrefix = (tokens: Token[]) => {
+  if (tokens.length === 0) {
+    return false;
+  }
+
+  const next = tokens[0];
+  return expressionTokens.has(next.type);
+};

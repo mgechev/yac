@@ -1,7 +1,7 @@
 export enum TokenType {
   Number,
   Operator,
-  Paranthesis,
+  Parenthesis,
   Keyword,
   Identifier,
   Brace
@@ -26,7 +26,7 @@ export class Lexer {
         this.current++;
         continue;
       } else if (char === '(' || char === ')') {
-        tokens.push({ start: this.current, type: TokenType.Paranthesis, value: char });
+        tokens.push({ start: this.current, type: TokenType.Parenthesis, value: char });
       } else if (char === '{' || char === '}') {
         tokens.push({ start: this.current, type: TokenType.Brace, value: char });
       } else if (/\d/.test(char)) {
