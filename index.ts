@@ -14,3 +14,4 @@ const calculate = (input: string) => {
 console.log(calculate('(2 + 2) * 3')); // 12
 console.log(calculate('2 + 2 * 3')); // 8
 console.log(calculate('2 + 2 * 3 - 1')); // 7
+
