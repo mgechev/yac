@@ -29,7 +29,7 @@ export class Lexer {
       } else if (/\d/.test(char)) {
         tokens.push(this.consumeNumber(input));
         continue;
-      } else if (/\+|\-|\*|\/|=/.test(char)) {
+      } else if (/\+|\-|\*|\/|=|,/.test(char)) {
         tokens.push({ start: this.current, type: TokenType.Operator, value: char });
       } else if (/[a-zA-Z]/.test(char)) {
         tokens.push(this.consumeKeywordOrIdentifier(input));

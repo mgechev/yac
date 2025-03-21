@@ -2,18 +2,60 @@ import { Token, TokenType } from "./lexer";
 
 export enum NodeType {
   BinaryExpression,
-  Number
+  FunctionCall,
+  Number,
+  IfStatement,
+  WhileStatement,
+  FunctionDeclaration,
+  ReturnStatement,
+  VariableDeclaration,
 }
 
-export interface Node {
-  type: NodeType;
+export type Statement = IfStatementNode | WhileStatementNode | FunctionDeclarationNode | VariableDeclarationNode | ReturnStatementNode;
+export type Expression = BinaryExpressionNode | NumberNode | FunctionCallNode;
+
+export interface IfStatementNode extends Node {
+  type: NodeType.IfStatement;
+  condition: Expression;
+  body: Node;
+  else?: Node;
+}
+
+export interface WhileStatementNode extends Node {
+  type: NodeType.WhileStatement;
+  condition: Expression;
+  body: Node;
+}
+
+export interface FunctionDeclarationNode extends Node {
+  type: NodeType.FunctionDeclaration;
+  name: string;
+  parameters: string[];
+  body: Statement[];
+}
+
+export interface VariableDeclarationNode extends Node {
+  type: NodeType.VariableDeclaration;
+  name: string;
+  value: Expression;
+}
+
+export interface ReturnStatementNode extends Node {
+  type: NodeType.ReturnStatement;
+  value: Expression;
+}
+
+export interface FunctionCallNode extends Node {
+  type: NodeType.FunctionCall;
+  name: string;
+  arguments: Expression[];
 }
 
 export interface BinaryExpressionNode extends Node {
   type: NodeType.BinaryExpression;
   operator: Token;
-  left: Node;
-  right: Node;
+  left: Expression;
+  right: Expression;
 }
 
 export interface NumberNode extends Node {
