@@ -125,3 +125,32 @@ test('should parse conditional statements without else blocks', () => {
   expect(ifStatement.condition.right.type).toBe('Number');
   expect(ifStatement.condition.right.value).toBe(10);
 });
+
+test('should parse while loops', () => {
+  const program = `
+  while (x < 10) {
+    x
+  }
+  `;
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  const ast = parser.parse(tokens);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const whileStatement = ast.body[0] as any;
+
+  expect(whileStatement.type).toBe('WhileStatement');
+  expect(whileStatement.condition.type).toBe('BinaryExpression');
+  expect(whileStatement.condition.operator.value).toBe('<');
+  expect(whileStatement.condition.left.type).toBe('Identifier');
+  expect(whileStatement.condition.left.name).toBe('x');
+  expect(whileStatement.condition.right.type).toBe('Number');
+  expect(whileStatement.condition.right.value).toBe(10);
+
+  const body = whileStatement.body[0] as any;
+  expect(body.type).toBe('Identifier');
+  expect(body.name).toBe('x');
+});

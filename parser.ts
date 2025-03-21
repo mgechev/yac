@@ -46,7 +46,7 @@ export interface IfStatementNode extends Node {
 export interface WhileStatementNode extends Node {
   type: NodeType.WhileStatement;
   condition: Expression;
-  body: Node;
+  body: Statement[];
 }
 
 export interface FunctionDeclarationNode extends Node {
@@ -185,7 +185,12 @@ export class Parser {
     if (tokens.shift()!.value !== "{") {
       throw new Error("Expected opening brace");
     }
-    const body = this.parseStatements(tokens)[0];
+    const body: Statement[] = [];
+    while ((tokens[0] as any).value !== "}") {
+      const statement = this.parseStatement(tokens);
+      body.push(statement);
+    }
+    tokens.shift();
     return { type: NodeType.WhileStatement, condition, body };
   }
 
