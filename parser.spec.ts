@@ -63,3 +63,65 @@ test('should parse function declarations', () => {
   expect(funcBody[0].value.left.type).toBe('Identifier');
   expect(funcBody[0].value.right.type).toBe('Identifier');
 });
+
+test('should parse conditional statements', () => {
+  const program = `
+  if (x > 10) {
+    x
+  } else {
+    0
+  }
+  `;
+
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  const ast = parser.parse(tokens);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const ifStatement = ast.body[0] as any;
+
+  expect(ifStatement.type).toBe('IfStatement');
+  expect(ifStatement.condition.type).toBe('BinaryExpression');
+  expect(ifStatement.condition.operator.value).toBe('>');
+  expect(ifStatement.condition.left.type).toBe('Identifier');
+  expect(ifStatement.condition.left.name).toBe('x');
+  expect(ifStatement.condition.right.type).toBe('Number');
+  expect(ifStatement.condition.right.value).toBe(10);
+
+  const consequent = ifStatement.body[0] as any;
+  expect(consequent.type).toBe('Identifier');
+  expect(consequent.name).toBe('x');
+
+  const alternate = ifStatement.else[0] as any;
+  expect(alternate.type).toBe('Number');
+  expect(alternate.value).toBe(0);
+});
+
+test('should parse conditional statements without else blocks', () => {
+  const program = `
+  if (x > 10) {
+    x
+  }
+  `;
+
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  const ast = parser.parse(tokens);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const ifStatement = ast.body[0] as any;
+
+  expect(ifStatement.type).toBe('IfStatement');
+  expect(ifStatement.condition.type).toBe('BinaryExpression');
+  expect(ifStatement.condition.operator.value).toBe('>');
+  expect(ifStatement.condition.left.type).toBe('Identifier');
+  expect(ifStatement.condition.left.name).toBe('x');
+  expect(ifStatement.condition.right.type).toBe('Number');
+  expect(ifStatement.condition.right.value).toBe(10);
+});
