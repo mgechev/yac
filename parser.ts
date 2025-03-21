@@ -9,6 +9,11 @@ export enum NodeType {
   FunctionDeclaration,
   ReturnStatement,
   VariableDeclaration,
+  Program
+}
+
+interface Node {
+  type: NodeType;
 }
 
 export type Statement = IfStatementNode | WhileStatementNode | FunctionDeclarationNode | VariableDeclarationNode | ReturnStatementNode;
@@ -63,6 +68,11 @@ export interface NumberNode extends Node {
   value: number;
 }
 
+export interface Program {
+  type: NodeType.Program;
+  body: Statement[];
+}
+
 
 /*
 
@@ -87,6 +97,104 @@ export interface NumberNode extends Node {
 
 export class Parser {
   parse(tokens: Token[]): Node {
+    return this.parseProgram(tokens);
+  }
+
+  private parseProgram(tokens: Token[]): Program {
+    return { type: NodeType.Program, body: this.parseStatements(tokens) };
+  }
+
+  private parseStatements(tokens: Token[]): Statement[] {
+    const statements: Statement[] = [];
+    while (tokens.length > 0) {
+      const token = tokens[0];
+      if (token.type === TokenType.Keyword && token.value === 'let') {
+        statements.push(this.parseVariableDeclaration(tokens));
+      } else if (token.type === TokenType.Keyword && token.value === 'if') {
+        statements.push(this.parseIfStatement(tokens));
+      } else if (token.type === TokenType.Keyword && token.value === 'while') {
+        statements.push(this.parseWhileStatement(tokens));
+      } else if (token.type === TokenType.Keyword && token.value === 'function') {
+        statements.push(this.parseFunctionDeclaration(tokens));
+      } else if (token.type === TokenType.Keyword && token.value === 'return') {
+        statements.push(this.parseReturnStatement(tokens));
+      } else {
+        throw new Error('Invalid token');
+      }
+    }
+    return statements;
+  }
+
+  private parseReturnStatement(tokens: Token[]): ReturnStatementNode {
+    tokens.shift();
+    const value = this.parseExpression(tokens);
+    return { type: NodeType.ReturnStatement, value };
+  }
+
+  private parseFunctionDeclaration(tokens: Token[]): FunctionDeclarationNode {
+    tokens.shift();
+    const name = tokens.shift()!.value;
+    if (tokens.shift()!.value !== '(') {
+      throw new Error('Expected opening paranthesis');
+    }
+    const parameters: string[] = [];
+    while (tokens[0].value !== ')') {
+      parameters.push(tokens.shift()!.value);
+      if (tokens[0].value === ',') {
+        tokens.shift();
+      }
+    }
+    tokens.shift();
+    if (tokens.shift()!.value !== '{') {
+      throw new Error('Expected opening brace');
+    }
+    const body: Statement[] = [];
+    while (tokens[0].value !== '}') {
+      body.push(this.parseStatements(tokens)[0]);
+    }
+    tokens.shift();
+    return { type: NodeType.FunctionDeclaration, name, parameters, body };
+  }
+
+  private parseWhileStatement(tokens: Token[]): WhileStatementNode {
+    tokens.shift();
+    const condition = this.parseExpression(tokens);
+    if (tokens.shift()!.value !== '{') {
+      throw new Error('Expected opening brace');
+    }
+    const body = this.parseStatements(tokens)[0];
+    return { type: NodeType.WhileStatement, condition, body };
+  }
+
+  private parseIfStatement(tokens: Token[]): IfStatementNode {
+    tokens.shift();
+    const condition = this.parseExpression(tokens);
+    if (tokens.shift()!.value !== '{') {
+      throw new Error('Expected opening brace');
+    }
+    const body = this.parseStatements(tokens)[0];
+    let elseBody;
+    if (tokens[0].value === 'else') {
+      tokens.shift();
+      if (tokens.shift()!.value !== '{') {
+        throw new Error('Expected opening brace');
+      }
+      elseBody = this.parseStatements(tokens)[0];
+    }
+    return { type: NodeType.IfStatement, condition, body, else: elseBody };
+  }
+
+  private parseVariableDeclaration(tokens: Token[]): VariableDeclarationNode {
+    tokens.shift();
+    const name = tokens.shift()!.value;
+    if (tokens.shift()!.value !== '=') {
+      throw new Error('Expected assignment operator');
+    }
+    const value = this.parseExpression(tokens);
+    return { type: NodeType.VariableDeclaration, name, value };
+  }
+
+  private parseExpression(tokens: Token[]): Expression {
     return this.parseAddition(tokens);
   }
 

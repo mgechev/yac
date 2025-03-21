@@ -3,7 +3,8 @@ export enum TokenType {
   Operator,
   Paranthesis,
   Keyword,
-  Identifier
+  Identifier,
+  Brace
 }
 
 export interface Token {
@@ -26,11 +27,13 @@ export class Lexer {
         continue;
       } else if (char === '(' || char === ')') {
         tokens.push({ start: this.current, type: TokenType.Paranthesis, value: char });
+      } else if (char === '{' || char === '}') {
+        tokens.push({ start: this.current, type: TokenType.Brace, value: char });
       } else if (/\d/.test(char)) {
         tokens.push(this.consumeNumber(input));
         continue;
-      } else if (/\+|\-|\*|\/|=|,/.test(char)) {
-        tokens.push({ start: this.current, type: TokenType.Operator, value: char });
+      } else if (/\+|\-|\*|\/|=|,|>|<|!/.test(char)) {
+        tokens.push(this.consumeOperator(input));
       } else if (/[a-zA-Z]/.test(char)) {
         tokens.push(this.consumeKeywordOrIdentifier(input));
         continue;
@@ -70,4 +73,18 @@ export class Lexer {
     return { start, type: TokenType.Number, value };
   }
 
+  consumeOperator(input: string): Token {
+    const char = input[this.current];
+    if (char === '=' && input[this.current + 1] === '=') {
+      const token = { start: this.current, type: TokenType.Operator, value: '==' };
+      this.current++;
+      return token;
+    } else if (char === '!' && input[this.current + 1] === '=') {
+      const token = { start: this.current, type: TokenType.Operator, value: '!=' };
+      this.current++;
+      return token;
+    } else {
+      return { start: this.current, type: TokenType.Operator, value: char };
+    }
+  }
 }
