@@ -1,0 +1,25 @@
+{
+  "name": "yac",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgechev/yac.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mgechev/yac/issues"
+  },
+  "homepage": "https://github.com/mgechev/yac#readme",
+  "description": "",
+  "devDependencies": {
+    "vitest": "^3.0.9"
+  }
+}

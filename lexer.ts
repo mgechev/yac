@@ -9,6 +9,7 @@ export enum TokenType {
 export interface Token {
   type: TokenType;
   value: string;
+  start: number;
 }
 
 const keywords = new Set(['let', 'if', 'else', 'while', 'function', 'return']);
@@ -24,12 +25,12 @@ export class Lexer {
         this.current++;
         continue;
       } else if (char === '(' || char === ')') {
-        tokens.push({ type: TokenType.Paranthesis, value: char });
+        tokens.push({ start: this.current, type: TokenType.Paranthesis, value: char });
       } else if (/\d/.test(char)) {
         tokens.push(this.consumeNumber(input));
         continue;
-      } else if (/\+|\-|\*|\//.test(char)) {
-        tokens.push({ type: TokenType.Operator, value: char });
+      } else if (/\+|\-|\*|\/|=/.test(char)) {
+        tokens.push({ start: this.current, type: TokenType.Operator, value: char });
       } else if (/[a-zA-Z]/.test(char)) {
         tokens.push(this.consumeKeywordOrIdentifier(input));
         continue;
@@ -41,19 +42,21 @@ export class Lexer {
 
   consumeKeywordOrIdentifier(input: string): Token {
     let value = '';
+    const start = this.current;
     while (/[a-zA-Z]/.test(input[this.current])) {
       value += input[this.current];
       this.current++;
     }
     if (keywords.has(value)) {
-      return { type: TokenType.Keyword, value };
+      return { start, type: TokenType.Keyword, value };
     }
-    return { type: TokenType.Identifier, value };
+    return { start, type: TokenType.Identifier, value };
   }
 
   consumeNumber(input: string): Token {
     let value = '';
     let decimalPoint = false;
+    const start = this.current;
     while (/\d/.test(input[this.current]) || input[this.current] === '.') {
       if (decimalPoint && input[this.current] === '.') {
         throw new Error('Invalid number');
@@ -64,7 +67,7 @@ export class Lexer {
       value += input[this.current];
       this.current++;
     }
-    return { type: TokenType.Number, value };
+    return { start, type: TokenType.Number, value };
   }
 
 }
