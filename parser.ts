@@ -43,6 +43,12 @@ export interface IfStatementNode extends Node {
   else?: Statement[];
 }
 
+export interface FunctionCallNode extends Node {
+  type: NodeType.FunctionCall;
+  name: string;
+  arguments: Expression[];
+}
+
 export interface WhileStatementNode extends Node {
   type: NodeType.WhileStatement;
   condition: Expression;
@@ -65,12 +71,6 @@ export interface VariableDeclarationNode extends Node {
 export interface ReturnStatementNode extends Node {
   type: NodeType.ReturnStatement;
   value: Expression;
-}
-
-export interface FunctionCallNode extends Node {
-  type: NodeType.FunctionCall;
-  name: string;
-  arguments: Expression[];
 }
 
 export interface BinaryExpressionNode extends Node {
@@ -293,10 +293,36 @@ export class Parser {
       }
       return node;
     }
-    if (token.type === TokenType.Identifier) {
+    if (token.type !== TokenType.Identifier) {
+      return { type: NodeType.Number, value: parseFloat(token.value) };
+    }
+    if (!tokens[0] || tokens[0].value !== "(") {
       return { type: NodeType.Identifier, name: token.value };
     }
-    return { type: NodeType.Number, value: parseFloat(token.value) };
+    return this.parseFunctionCall(token, tokens);
+  }
+
+  private parseFunctionCall(identifier: Token, tokens: Token[]): Expression {
+    const node = {
+      type: NodeType.FunctionCall,
+      name: identifier.value,
+      arguments: []
+    } as FunctionCallNode;
+
+    if (tokens.shift()!.value !== "(") {
+      throw new Error("Expected parenthesis");
+    }
+
+    while (tokens[0].value !== ")") {
+      node.arguments.push(this.parseExpression(tokens));
+      const next = tokens.shift() as any;
+      if (next?.value !== ',' && next?.value !== ')') {
+        throw new Error("Expected comma");
+      } else if (next?.value === ')') {
+        break;
+      }
+    }
+    return node;
   }
 }
 

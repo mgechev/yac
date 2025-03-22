@@ -154,3 +154,29 @@ test('should parse while loops', () => {
   expect(body.type).toBe('Identifier');
   expect(body.name).toBe('x');
 });
+
+test('should parse function calls', () => {
+  const program = `
+  add(1, 2)
+  `;
+
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  const ast = parser.parse(tokens);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const funcCall = ast.body[0] as any;
+
+  expect(funcCall.type).toBe('FunctionCall');
+  expect(funcCall.name).toBe('add');
+  expect(funcCall.arguments.length).toBe(2);
+
+  expect(funcCall.arguments[0].type).toBe('Number');
+  expect(funcCall.arguments[0].value).toBe(1);
+
+  expect(funcCall.arguments[1].type).toBe('Number');
+  expect(funcCall.arguments[1].value).toBe(2);
+});
