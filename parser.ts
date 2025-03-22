@@ -90,27 +90,6 @@ export interface Program {
   body: Statement[];
 }
 
-/*
-
-    (2 + 2) * 3
-
-        *
-       / \
-      +   3
-    /  \
-   2    2
-
-
-   2 + 2 * 3
-
-      +
-    /  \
-   2    *
-       / \
-      2   3
-
-*/
-
 export class Parser {
   parse(tokens: Token[]): Program {
     return this.parseProgram(tokens);
