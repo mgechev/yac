@@ -180,3 +180,36 @@ test('should parse function calls', () => {
   expect(funcCall.arguments[1].type).toBe('Number');
   expect(funcCall.arguments[1].value).toBe(2);
 });
+
+
+test('should allow function calls in expressions', () => {
+  const program = `
+  1 + add(2, 3)
+  `;
+
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  const ast = parser.parse(tokens);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const expression = ast.body[0] as any;
+
+  expect(expression.type).toBe('BinaryExpression');
+  expect(expression.operator.value).toBe('+');
+
+  expect(expression.left.type).toBe('Number');
+  expect(expression.left.value).toBe(1);
+
+  expect(expression.right.type).toBe('FunctionCall');
+  expect(expression.right.name).toBe('add');
+  expect(expression.right.arguments.length).toBe(2);
+
+  expect(expression.right.arguments[0].type).toBe('Number');
+  expect(expression.right.arguments[0].value).toBe(2);
+
+  expect(expression.right.arguments[1].type).toBe('Number');
+  expect(expression.right.arguments[1].value).toBe(3);
+});

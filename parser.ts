@@ -156,9 +156,7 @@ export class Parser {
   private parseFunctionDeclaration(tokens: Token[]): FunctionDeclarationNode {
     tokens.shift();
     const name = tokens.shift()!.value;
-    if (tokens.shift()!.value !== "(") {
-      throw new Error("Expected opening parenthesis");
-    }
+    this.eat('(', tokens);
     const parameters: string[] = [];
     while (tokens[0].value !== ")") {
       parameters.push(tokens.shift()!.value);
@@ -166,10 +164,8 @@ export class Parser {
         tokens.shift();
       }
     }
-    tokens.shift();
-    if (tokens.shift()!.value !== "{") {
-      throw new Error("Expected opening brace");
-    }
+    this.eat(')', tokens);
+    this.eat('{', tokens);
     const body: Statement[] = [];
     while ((tokens[0] as any).value !== "}") {
       const statement = this.parseStatement(tokens);
@@ -180,11 +176,9 @@ export class Parser {
   }
 
   private parseWhileStatement(tokens: Token[]): WhileStatementNode {
-    tokens.shift();
+    this.eat('while', tokens);
     const condition = this.parseExpression(tokens);
-    if (tokens.shift()!.value !== "{") {
-      throw new Error("Expected opening brace");
-    }
+    this.eat("{", tokens);
     const body: Statement[] = [];
     while ((tokens[0] as any).value !== "}") {
       const statement = this.parseStatement(tokens);
@@ -195,16 +189,11 @@ export class Parser {
   }
 
   private parseIfStatement(tokens: Token[]): IfStatementNode {
-    // 'if' token
-    tokens.shift();
-    // '(' token
-    tokens.shift();
+    this.eat('if', tokens);
+    this.eat('(', tokens);
     const condition = this.parseExpression(tokens);
-    // ')' token
-    tokens.shift();
-    if (tokens.shift()!.value !== "{") {
-      throw new Error("Expected opening brace");
-    }
+    this.eat(')', tokens);
+    this.eat('{', tokens);
     const body: Statement[] = [];
     while ((tokens[0] as any).value !== "}") {
       const statement = this.parseStatement(tokens);
@@ -231,9 +220,7 @@ export class Parser {
   private parseVariableDeclaration(tokens: Token[]): VariableDeclarationNode {
     tokens.shift();
     const name = tokens.shift()!.value;
-    if (tokens.shift()!.value !== "=") {
-      throw new Error("Expected assignment operator");
-    }
+    this.eat('=', tokens);
     const value = this.parseExpression(tokens);
     return { type: NodeType.VariableDeclaration, name, value };
   }
@@ -309,9 +296,7 @@ export class Parser {
       arguments: []
     } as FunctionCallNode;
 
-    if (tokens.shift()!.value !== "(") {
-      throw new Error("Expected parenthesis");
-    }
+    this.eat("(", tokens);
 
     while (tokens[0].value !== ")") {
       node.arguments.push(this.parseExpression(tokens));
@@ -323,6 +308,14 @@ export class Parser {
       }
     }
     return node;
+  }
+
+  eat(token: string, tokens: Token[]) {
+    if (tokens[0].value === token) {
+      tokens.shift();
+    } else {
+      throw new Error(`Expected ${token}`);
+    }
   }
 }
 
