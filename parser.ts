@@ -13,17 +13,13 @@ export enum NodeType {
   Identifier = "Identifier",
 }
 
-interface Node {
-  type: NodeType;
-}
-
 export type Expression =
   | BinaryExpressionNode
   | NumberNode
   | FunctionCallNode
   | IdentifierNode;
 
-export interface IdentifierNode extends Node {
+export interface IdentifierNode {
   type: NodeType.Identifier;
   name: string;
 }
@@ -36,51 +32,51 @@ export type Statement =
   | ReturnStatementNode
   | Expression;
 
-export interface IfStatementNode extends Node {
+export interface IfStatementNode {
   type: NodeType.IfStatement;
   condition: Expression;
   body: Statement[];
   else?: Statement[];
 }
 
-export interface FunctionCallNode extends Node {
+export interface FunctionCallNode {
   type: NodeType.FunctionCall;
   name: string;
   arguments: Expression[];
 }
 
-export interface WhileStatementNode extends Node {
+export interface WhileStatementNode {
   type: NodeType.WhileStatement;
   condition: Expression;
   body: Statement[];
 }
 
-export interface FunctionDeclarationNode extends Node {
+export interface FunctionDeclarationNode {
   type: NodeType.FunctionDeclaration;
   name: string;
   parameters: string[];
   body: Statement[];
 }
 
-export interface VariableDeclarationNode extends Node {
+export interface VariableDeclarationNode {
   type: NodeType.VariableDeclaration;
   name: string;
   value: Expression;
 }
 
-export interface ReturnStatementNode extends Node {
+export interface ReturnStatementNode {
   type: NodeType.ReturnStatement;
   value: Expression;
 }
 
-export interface BinaryExpressionNode extends Node {
+export interface BinaryExpressionNode {
   type: NodeType.BinaryExpression;
   operator: Token;
   left: Expression;
   right: Expression;
 }
 
-export interface NumberNode extends Node {
+export interface NumberNode {
   type: NodeType.Number;
   value: number;
 }
@@ -89,6 +85,18 @@ export interface Program {
   type: NodeType.Program;
   body: Statement[];
 }
+
+export type Node =
+  | Program
+  | NumberNode
+  | BinaryExpressionNode
+  | ReturnStatementNode
+  | VariableDeclarationNode
+  | FunctionDeclarationNode
+  | IfStatementNode
+  | WhileStatementNode
+  | FunctionCallNode
+  | IdentifierNode;
 
 export class Parser {
   parse(tokens: Token[]): Program {
@@ -135,7 +143,7 @@ export class Parser {
   private parseFunctionDeclaration(tokens: Token[]): FunctionDeclarationNode {
     tokens.shift();
     const name = tokens.shift()!.value;
-    this.eat('(', tokens);
+    this.eat("(", tokens);
     const parameters: string[] = [];
     while (tokens[0].value !== ")") {
       parameters.push(tokens.shift()!.value);
@@ -143,8 +151,8 @@ export class Parser {
         tokens.shift();
       }
     }
-    this.eat(')', tokens);
-    this.eat('{', tokens);
+    this.eat(")", tokens);
+    this.eat("{", tokens);
     const body: Statement[] = [];
     while ((tokens[0] as any).value !== "}") {
       const statement = this.parseStatement(tokens);
@@ -155,7 +163,7 @@ export class Parser {
   }
 
   private parseWhileStatement(tokens: Token[]): WhileStatementNode {
-    this.eat('while', tokens);
+    this.eat("while", tokens);
     const condition = this.parseExpression(tokens);
     this.eat("{", tokens);
     const body: Statement[] = [];
@@ -168,11 +176,11 @@ export class Parser {
   }
 
   private parseIfStatement(tokens: Token[]): IfStatementNode {
-    this.eat('if', tokens);
-    this.eat('(', tokens);
+    this.eat("if", tokens);
+    this.eat("(", tokens);
     const condition = this.parseExpression(tokens);
-    this.eat(')', tokens);
-    this.eat('{', tokens);
+    this.eat(")", tokens);
+    this.eat("{", tokens);
     const body: Statement[] = [];
     while ((tokens[0] as any).value !== "}") {
       const statement = this.parseStatement(tokens);
@@ -180,7 +188,7 @@ export class Parser {
     }
     // '}' token
     tokens.shift();
-    let elseBody: Statement[]|undefined = undefined;
+    let elseBody: Statement[] | undefined = undefined;
     if (tokens.length && tokens[0].value === "else") {
       tokens.shift();
       if (tokens.shift()!.value !== "{") {
@@ -199,7 +207,7 @@ export class Parser {
   private parseVariableDeclaration(tokens: Token[]): VariableDeclarationNode {
     tokens.shift();
     const name = tokens.shift()!.value;
-    this.eat('=', tokens);
+    this.eat("=", tokens);
     const value = this.parseExpression(tokens);
     return { type: NodeType.VariableDeclaration, name, value };
   }
@@ -272,7 +280,7 @@ export class Parser {
     const node = {
       type: NodeType.FunctionCall,
       name: identifier.value,
-      arguments: []
+      arguments: [],
     } as FunctionCallNode;
 
     this.eat("(", tokens);
@@ -280,9 +288,9 @@ export class Parser {
     while (tokens[0].value !== ")") {
       node.arguments.push(this.parseExpression(tokens));
       const next = tokens.shift() as any;
-      if (next?.value !== ',' && next?.value !== ')') {
+      if (next?.value !== "," && next?.value !== ")") {
         throw new Error("Expected comma");
-      } else if (next?.value === ')') {
+      } else if (next?.value === ")") {
         break;
       }
     }
