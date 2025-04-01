@@ -92,6 +92,9 @@ export class Interpreter {
   private symbolTable = new SymbolTable();
 
   evaluate(node: Node): void {
+    if (this.symbolTable.getCurrentScope().returnValue !== undefined) {
+      return;
+    }
     switch (node.type) {
       case NodeType.Program:
         this.evaluateProgram(node);
@@ -158,6 +161,9 @@ export class Interpreter {
   private evaluateWhileStatement(node: WhileStatementNode) {
     while (this.evaluateBinaryExpression(node.condition)) {
       this.evaluateStatements(node.body);
+      if (this.symbolTable.getCurrentScope().returnValue !== undefined) {
+        break;
+      }
     }
   }
 

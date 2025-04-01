@@ -16,9 +16,24 @@ evaluate('log(2 + 2 * 3)'); // 8
 evaluate('log(2 + 2 * 3 - 1)'); // 7
 
 evaluate(`
-  function add(a, b) {
-    return a + b
-  }
+function add(a, b) {
+  return a + b
+}
 
-  log(add(2, 3));
+log(add(2, 3));
 `);
+
+evaluate(`
+function fibonacci(n) {
+  if (n == 0) {
+    return 0
+  }
+  if (n == 1) {
+    return 1
+  }
+  return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+log(fibonacci(10))
+`);
+  

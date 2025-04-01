@@ -17,6 +17,7 @@
   "homepage": "https://github.com/mgechev/yac#readme",
   "description": "",
   "devDependencies": {
+    "ts-node": "^10.9.2",
     "vitest": "^3.0.9"
   }
 }

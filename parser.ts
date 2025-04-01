@@ -309,7 +309,7 @@ export class Parser {
     if (tokens[0].value === token) {
       tokens.shift();
     } else {
-      throw new Error(`Expected ${token}`);
+      throw new Error(`Expected ${token} at position ${tokens[0].start}`);
     }
   }
 }
