@@ -2,7 +2,7 @@ import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { Interpreter } from "./interpreter";
 
-const calculate = (input: string) => {
+const evaluate = (input: string) => {
   const lexer = new Lexer();
   const tokens = lexer.tokenize(input);
   const parser = new Parser();
@@ -11,23 +11,14 @@ const calculate = (input: string) => {
   return interpreter.evaluate(ast);
 };
 
-console.log(calculate('(2 + 2) * 3')); // 12
-console.log(calculate('2 + 2 * 3')); // 8
-console.log(calculate('2 + 2 * 3 - 1')); // 7
+evaluate('log((2 + 2) * 3)'); // 12
+evaluate('log(2 + 2 * 3)'); // 8
+evaluate('log(2 + 2 * 3 - 1)'); // 7
 
-const program = `
+evaluate(`
   function add(a, b) {
     return a + b
   }
 
   log(add(2, 3));
-`;
-
-const lexer = new Lexer();
-const parser = new Parser();
-const interpreter = new Interpreter();
-
-const tokens = lexer.tokenize(program);
-const ast = parser.parse(tokens);
-interpreter.evaluate(ast);
-
+`);

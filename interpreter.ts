@@ -1,9 +1,9 @@
-import { Expression, FunctionCallNode, FunctionDeclarationNode, IfStatementNode, NodeType, NumberNode, Program, ReturnStatementNode, Statement, VariableDeclarationNode, WhileStatementNode } from "./parser";
+import { BuiltInFunctionNode, Expression, FunctionCallNode, FunctionDeclarationNode, IfStatementNode, NodeType, NumberNode, Program, ReturnStatementNode, Statement, VariableDeclarationNode, WhileStatementNode } from "./parser";
 import { Node } from "./parser";
 
 class Scope {
   private variables: { [key: string]: number | boolean } = {};
-  private functions: { [key: string]: FunctionDeclarationNode } = {};
+  private functions: { [key: string]: FunctionDeclarationNode|BuiltInFunctionNode } = {};
   
   returnValue: number | boolean | undefined = undefined;
 
@@ -15,11 +15,11 @@ class Scope {
     return this.variables[name];
   }
 
-  setFunction(name: string, func: FunctionDeclarationNode) {
+  setFunction(name: string, func: FunctionDeclarationNode|BuiltInFunctionNode) {
     this.functions[name] = func;
   }
 
-  getFunction(name: string): FunctionDeclarationNode {
+  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionNode {
     return this.functions[name];
   }
   
@@ -36,10 +36,11 @@ class GlobalScope extends Scope {
   constructor() {
     super();
     this.setFunction('log', {
-      type: NodeType.FunctionDeclaration,
+      type: NodeType.BuiltInFunction,
       name: 'log',
-      parameters: ['value'],
-      body: [],
+      body() {
+        console.log(...arguments);
+      }
     });
   }
 }
@@ -76,7 +77,7 @@ class SymbolTable {
     throw new Error(`Unknown variable: ${name}`);
   }
 
-  getFunction(name: string): FunctionDeclarationNode {
+  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionNode {
     for (let i = this.namespaces.length - 1; i >= 0; i--) {
       const scope = this.namespaces[i];
       if (scope.hasFunction(name)) {
@@ -167,6 +168,9 @@ export class Interpreter {
 
   private evaluateFunctionCall(node: FunctionCallNode): number|boolean {
     const func = this.symbolTable.getFunction(node.name);
+    if (func.type === NodeType.BuiltInFunction) {
+      return func.body(...node.arguments.map(arg => this.evaluateBinaryExpression(arg)));
+    }
     this.symbolTable.enterScope();
     for (let i = 0; i < func.parameters.length; i++) {
       this.symbolTable.getCurrentScope().setVariable(func.parameters[i], this.evaluateBinaryExpression(node.arguments[i]));

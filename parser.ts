@@ -7,6 +7,7 @@ export enum NodeType {
   IfStatement = "IfStatement",
   WhileStatement = "WhileStatement",
   FunctionDeclaration = "FunctionDeclaration",
+  BuiltInFunction = "BuiltInFunction",
   ReturnStatement = "ReturnStatement",
   VariableDeclaration = "VariableDeclaration",
   Program = "Program",
@@ -28,6 +29,7 @@ export type Statement =
   | IfStatementNode
   | WhileStatementNode
   | FunctionDeclarationNode
+  | BuiltInFunctionNode
   | VariableDeclarationNode
   | ReturnStatementNode
   | Expression;
@@ -58,6 +60,11 @@ export interface FunctionDeclarationNode {
   body: Statement[];
 }
 
+export interface BuiltInFunctionNode {
+  type: NodeType.BuiltInFunction;
+  name: string;
+  body: Function;
+}
 export interface VariableDeclarationNode {
   type: NodeType.VariableDeclaration;
   name: string;
@@ -93,6 +100,7 @@ export type Node =
   | ReturnStatementNode
   | VariableDeclarationNode
   | FunctionDeclarationNode
+  | BuiltInFunctionNode
   | IfStatementNode
   | WhileStatementNode
   | FunctionCallNode
