@@ -1,7 +1,7 @@
 import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { Interpreter } from "./interpreter";
-import { WebAssemblyTextCodegen } from "./webassembly-text-codegen";
+import { WebAssemblyTextCodegen } from "./wat-codegen";
 
 const evaluate = (input: string) => {
   const lexer = new Lexer();

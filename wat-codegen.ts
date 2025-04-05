@@ -67,7 +67,7 @@ export class WebAssemblyTextCodegen {
       code += this.generate(nonFunctionDeclaration);
     }
 
-    code += "return)\n";
+    code += "(drop)\n(return))\n";
     code += "(start $main))\n";
 
     return code;
@@ -78,8 +78,13 @@ export class WebAssemblyTextCodegen {
     for (const param of node.parameters) {
       code += `(param $${param} f32) `;
     }
-    code += "\n";
+    code += (`(result f32)\n`);
+    const hasTailReturn = node.body[node.body.length - 1].type === "ReturnStatement";
     for (const statement of node.body) {
+      if (statement.type === "IfStatement") {
+        code += this.generateIfStatement(statement, hasTailReturn);
+        continue;
+      }
       code += this.generate(statement);
     }
     code += ")\n";
@@ -130,9 +135,14 @@ export class WebAssemblyTextCodegen {
     return code;
   }
 
-  private generateIfStatement(node: IfStatementNode): string {
-    let code = "(if (result f32)\n";
+  private generateIfStatement(node: IfStatementNode, hasTailReturn = false): string {
+    let code = "";
     code += this.generate(node.condition);
+    if (hasTailReturn) {
+      code += "(if\n";
+    } else {
+      code += "(if (result f32)\n";
+    }
     code += "(then\n";
     for (const statement of node.body) {
       code += this.generate(statement);
@@ -169,7 +179,7 @@ export class WebAssemblyTextCodegen {
     for (const arg of node.arguments) {
       code += this.generate(arg);
     }
-    code = `(call $${node.name})\n`;
+    code += `(call $${node.name})\n`;
     return code;
   }
 
