@@ -1,9 +1,9 @@
-import { BuiltInFunctionNode, Expression, FunctionCallNode, FunctionDeclarationNode, IfStatementNode, NodeType, NumberNode, Program, ReturnStatementNode, Statement, VariableDeclarationNode, WhileStatementNode } from "./parser";
+import { BuiltInFunctionCallNode, Expression, FunctionCallNode, FunctionDeclarationNode, IfStatementNode, NodeType, NumberNode, Program, ReturnStatementNode, Statement, VariableDeclarationNode, WhileStatementNode } from "./parser";
 import { Node } from "./parser";
 
 class Scope {
   private variables: { [key: string]: number | boolean } = {};
-  private functions: { [key: string]: FunctionDeclarationNode|BuiltInFunctionNode } = {};
+  private functions: { [key: string]: FunctionDeclarationNode|BuiltInFunctionCallNode } = {};
   
   returnValue: number | boolean | undefined = undefined;
 
@@ -15,11 +15,11 @@ class Scope {
     return this.variables[name];
   }
 
-  setFunction(name: string, func: FunctionDeclarationNode|BuiltInFunctionNode) {
+  setFunction(name: string, func: FunctionDeclarationNode|BuiltInFunctionCallNode) {
     this.functions[name] = func;
   }
 
-  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionNode {
+  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionCallNode {
     return this.functions[name];
   }
   
@@ -77,7 +77,7 @@ class SymbolTable {
     throw new Error(`Unknown variable: ${name}`);
   }
 
-  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionNode {
+  getFunction(name: string): FunctionDeclarationNode|BuiltInFunctionCallNode {
     for (let i = this.namespaces.length - 1; i >= 0; i--) {
       const scope = this.namespaces[i];
       if (scope.hasFunction(name)) {

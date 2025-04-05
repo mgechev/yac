@@ -29,7 +29,7 @@ export type Statement =
   | IfStatementNode
   | WhileStatementNode
   | FunctionDeclarationNode
-  | BuiltInFunctionNode
+  | BuiltInFunctionCallNode
   | VariableDeclarationNode
   | ReturnStatementNode
   | Expression;
@@ -60,7 +60,7 @@ export interface FunctionDeclarationNode {
   body: Statement[];
 }
 
-export interface BuiltInFunctionNode {
+export interface BuiltInFunctionCallNode {
   type: NodeType.BuiltInFunction;
   name: string;
   body: Function;
@@ -100,7 +100,7 @@ export type Node =
   | ReturnStatementNode
   | VariableDeclarationNode
   | FunctionDeclarationNode
-  | BuiltInFunctionNode
+  | BuiltInFunctionCallNode
   | IfStatementNode
   | WhileStatementNode
   | FunctionCallNode
