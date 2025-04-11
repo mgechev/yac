@@ -1,4 +1,5 @@
 import {
+  AssignmentNode,
   BinaryExpressionNode,
   BuiltInFunctionCallNode,
   FunctionCallNode,
@@ -14,13 +15,72 @@ import {
   WhileStatementNode,
 } from "./parser";
 
+const ConsoleLogImport = '(import "console" "log" (func $log (param f32) (result f32)))';
+
 export class WebAssemblyTextCodegen {
-  private _loopCounter = 0;
+  private loopCounter = 0;
+  private builtInFunctions: {[name: string]: string} = {
+    'log': '$log'
+  };
 
   generate(node: Node): string {
+    const imports = this.getImportList(node);
+    return this.generateFromNode(node, imports);
+  }
+
+  private getImportList(node: Node): string[] {
+    const imports = new Set<string>();
+    const traverse = (node: Node|Node[]) => {
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          traverse(n);
+        }
+        return;
+      }
+      switch (node.type) {
+        case 'Program':
+          traverse(node.body);
+          break;
+        case 'FunctionCall':
+          if (node.name === 'log') {
+            imports.add(ConsoleLogImport);
+          }
+          traverse(node.arguments);
+          break;
+        case 'FunctionDeclaration':
+          for (const statement of node.body) {
+            traverse(statement);
+          }
+          break;
+        case 'IfStatement':
+          traverse(node.condition);
+          traverse(node.body);
+          if (node.else) {
+            traverse(node.body);
+          }
+          break;
+        case 'WhileStatement':
+          traverse(node.condition);
+          traverse(node.body);
+          break;
+        case 'VariableDeclaration':
+          traverse(node.value);
+          break;
+        case 'Assignment':
+          traverse(node.value);
+          break;
+        default:
+          break;
+        };
+    };
+    traverse(node)
+    return Array.from(imports);
+  }
+
+  private generateFromNode(node: Node, imports?: string[]): string {
     switch (node.type) {
       case "Program":
-        return this.generateProgram(node);
+        return this.generateProgram(node, imports ?? []);
       case "FunctionDeclaration":
         return this.generateFunction(node);
       case "ReturnStatement":
@@ -39,15 +99,17 @@ export class WebAssemblyTextCodegen {
         return this.generateFunctionCall(node);
       case "WhileStatement":
         return this.generateWhileStatement(node);
-      case "BuiltInFunction":
-        return this.generateBuiltInFunction(node);
+      case "Assignment":
+        return this.generateVariableAssignment(node);
       default:
         throw new Error(`Unknown node type: ${node.type}`);
     }
   }
 
-  private generateProgram(node: Program): string {
+  private generateProgram(node: Program, imports: string[]): string {
     let code = "(module\n";
+
+    code += imports.join(' ') + '\n';
 
     const functionDeclarations = node.body.filter(
       (statement) => statement.type === "FunctionDeclaration"
@@ -66,7 +128,7 @@ export class WebAssemblyTextCodegen {
 
     code += `\n(func $main\n`;
     for (const nonFunctionDeclaration of nonFunctionDeclarations) {
-      code += this.generate(nonFunctionDeclaration);
+      code += this.generateFromNode(nonFunctionDeclaration);
     }
 
     code += "(drop)\n(return))\n";
@@ -87,7 +149,7 @@ export class WebAssemblyTextCodegen {
         code += this.generateIfStatement(statement, hasTailReturn);
         continue;
       }
-      code += this.generate(statement);
+      code += this.generateFromNode(statement);
     }
     code += ")\n";
     return code;
@@ -96,7 +158,7 @@ export class WebAssemblyTextCodegen {
   private generateReturnStatement(node: ReturnStatementNode): string {
     let code = '';
     if (node.value) {
-      code += this.generate(node.value);
+      code += this.generateFromNode(node.value);
     }
     code += "(return)\n"
     return code;
@@ -104,8 +166,8 @@ export class WebAssemblyTextCodegen {
 
   private generateBinaryExpression(node: BinaryExpressionNode): string {
     let code = "";
-    code += this.generate(node.left);
-    code += this.generate(node.right);
+    code += this.generateFromNode(node.left);
+    code += this.generateFromNode(node.right);
     switch (node.operator.value) {
       case "+":
         code += "(f32.add)\n";
@@ -139,7 +201,7 @@ export class WebAssemblyTextCodegen {
 
   private generateIfStatement(node: IfStatementNode, hasTailReturn = false): string {
     let code = "";
-    code += this.generate(node.condition);
+    code += this.generateFromNode(node.condition);
     if (hasTailReturn) {
       code += "(if\n";
     } else {
@@ -147,13 +209,13 @@ export class WebAssemblyTextCodegen {
     }
     code += "(then\n";
     for (const statement of node.body) {
-      code += this.generate(statement);
+      code += this.generateFromNode(statement);
     }
     code += ")\n";
     if (node.else) {
       code += "(else\n";
       for (const statement of node.else) {
-        code += this.generate(statement);
+        code += this.generateFromNode(statement);
       }
       code += ")\n";
     }
@@ -163,7 +225,7 @@ export class WebAssemblyTextCodegen {
 
   private generateVariableDeclaration(node: VariableDeclarationNode): string {
     let code = `(local $${node.name} f32) `;
-    code += `${this.generate(node.value)}\n`;
+    code += `${this.generateFromNode(node.value)}\n`;
     code += `(local.set $${node.name})\n`;
     return code;
   }
@@ -179,30 +241,31 @@ export class WebAssemblyTextCodegen {
   private generateFunctionCall(node: FunctionCallNode): string {
     let code = '';
     for (const arg of node.arguments) {
-      code += this.generate(arg);
+      code += this.generateFromNode(arg);
+    }
+    let name = node.name;
+    if (this.builtInFunctions[name]) {
+      name = this.builtInFunctions[name];
     }
     code += `(call $${node.name})\n`;
     return code;
   }
 
-  private generateWhileStatement(node: WhileStatementNode): string {
-    const loopName = `$loop_${this._loopCounter++}`;
-    let code = `(loop ${loopName}\n`;
-    code += this.generate(node.condition);
-    code += `br_if ${loopName}`;
-    for (const statement of node.body) {
-      code += this.generate(statement);
-    }
+  private generateVariableAssignment(node: AssignmentNode): string {
+    let code = this.generateFromNode(node.value);
+    code += `(local.set $${node.variable})\n`;
     return code;
-    
   }
 
-  private generateBuiltInFunction(node: BuiltInFunctionCallNode): string {
-    switch (node.name) {
-      case "log":
-        return `(call $log ___)\n`;
-      default:
-        throw new Error(`Unknown built-in function: ${node.name}`);
+  private generateWhileStatement(node: WhileStatementNode): string {
+    const loopName = `$loop_${this.loopCounter++}`;
+    let code = `(loop ${loopName}\n`;
+    code += this.generateFromNode(node.condition);
+    code += `br_if ${loopName}`;
+    for (const statement of node.body) {
+      code += this.generateFromNode(statement);
     }
+    return `${code}\n)`;
+    
   }
 }

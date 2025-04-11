@@ -130,7 +130,7 @@ test('should work with recursive functions', () => {
   expect(generatedCode).toBe("(module(func $fibonacci (param $n f32) (result f32)(local.get $n)(f32.const 0)(f32.eq)(if(then(f32.const 0)(return)))(local.get $n)(f32.const 1)(f32.eq)(if(then(f32.const 1)(return)))(local.get $n)(f32.const 1)(f32.sub)(call $fibonacci)(local.get $n)(f32.const 2)(f32.sub)(call $fibonacci)(f32.add)(return))(func $main(f32.const 10)(call $fibonacci)(drop)(return))(start $main))");
 });
 
-test.skip('should work with simple while loops', () => {
+test('should work with simple while loops', () => {
   const program = `
     function iterate(a) {
       while (a < 10) {
@@ -144,5 +144,41 @@ test.skip('should work with simple while loops', () => {
 
   const generatedCode = generateCode(program);
 
-  expect(generatedCode).toBe("(module(func $iterate (param $a f32) (result f32)(loop $loop_0(local.get $a)(f32.const 10)(f32.lt)br_if $loop_0(local.get $a)(f32.const NaN)(local.get $a)(f32.const 1)(f32.add)(local.get $a)(return))(func $main(f32.const 1)(call $iterate)(drop)(return))(start $main))");
+  expect(generatedCode).toBe("(module(func $iterate (param $a f32) (result f32)(loop $loop_0(local.get $a)(f32.const 10)(f32.lt)br_if $loop_0(local.get $a)(f32.const 1)(f32.add)(local.set $a))(local.get $a)(return))(func $main(f32.const 1)(call $iterate)(drop)(return))(start $main))");
+});
+
+test('should be able to use built-in functions', () => {
+  const program = `
+    log(1 + 2)
+  `;
+
+  const generatedCode = generateCode(program);
+
+  expect(generatedCode).toBe("(module(import \"console\" \"log\" (func $log (param f32) (result f32)))(func $main(f32.const 1)(f32.const 2)(f32.add)(call $log)(drop)(return))(start $main))");
+});
+
+test('should generate at most one import per built-in function', () => {
+  const program = `
+    log(1)
+    log(1)
+  `;
+
+  const generatedCode = generateCode(program);
+
+  expect(generatedCode).toBe("(module(import \"console\" \"log\" (func $log (param f32) (result f32)))(func $main(f32.const 1)(call $log)(f32.const 1)(call $log)(drop)(return))(start $main))");
+});
+
+test('should generate imports when built in functions are used in function declarations', () => {
+  const program = `
+    function add(a, b) {
+      log(a + b)
+      return a + b
+    }
+    
+    add(1, 2)
+  `;
+
+  const generatedCode = generateCode(program);
+
+  expect(generatedCode).toBe("(module(import \"console\" \"log\" (func $log (param f32) (result f32)))(func $add (param $a f32) (param $b f32) (result f32)(local.get $a)(local.get $b)(f32.add)(call $log)(local.get $a)(local.get $b)(f32.add)(return))(func $main(f32.const 1)(f32.const 2)(call $add)(drop)(return))(start $main))");
 });

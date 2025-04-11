@@ -7,11 +7,12 @@ export enum NodeType {
   IfStatement = "IfStatement",
   WhileStatement = "WhileStatement",
   FunctionDeclaration = "FunctionDeclaration",
-  BuiltInFunction = "BuiltInFunction",
+  BuiltInFunctionCall = "BuiltInFunctionCall",
   ReturnStatement = "ReturnStatement",
   VariableDeclaration = "VariableDeclaration",
   Program = "Program",
   Identifier = "Identifier",
+  Assignment = "Assignment",
 }
 
 export type Expression =
@@ -32,7 +33,8 @@ export type Statement =
   | BuiltInFunctionCallNode
   | VariableDeclarationNode
   | ReturnStatementNode
-  | Expression;
+  | Expression
+  | AssignmentNode;
 
 export interface IfStatementNode {
   type: NodeType.IfStatement;
@@ -61,7 +63,7 @@ export interface FunctionDeclarationNode {
 }
 
 export interface BuiltInFunctionCallNode {
-  type: NodeType.BuiltInFunction;
+  type: NodeType.BuiltInFunctionCall;
   name: string;
   body: Function;
 }
@@ -88,6 +90,12 @@ export interface NumberNode {
   value: number;
 }
 
+export interface AssignmentNode {
+  type: NodeType.Assignment;
+  variable: string;
+  value: Expression;
+}
+
 export interface Program {
   type: NodeType.Program;
   body: Statement[];
@@ -104,7 +112,8 @@ export type Node =
   | IfStatementNode
   | WhileStatementNode
   | FunctionCallNode
-  | IdentifierNode;
+  | IdentifierNode
+  | AssignmentNode;
 
 export class Parser {
   parse(tokens: Token[]): Program {
@@ -135,6 +144,12 @@ export class Parser {
       return this.parseFunctionDeclaration(tokens);
     } else if (token.type === TokenType.Keyword && token.value === "return") {
       return this.parseReturnStatement(tokens);
+    } else if (
+      token.type === TokenType.Identifier &&
+      tokens[1] !== undefined &&
+      tokens[1].value === "="
+    ) {
+      return this.parseAssignment(tokens);
     } else if (isExpressionPrefix(tokens)) {
       return this.parseExpression(tokens);
     } else {
@@ -305,7 +320,17 @@ export class Parser {
     return node;
   }
 
-  eat(token: string, tokens: Token[]) {
+  private parseAssignment(tokens: Token[]): AssignmentNode {
+    const variable = tokens.shift()!.value;
+    this.eat("=", tokens);
+    return {
+      type: NodeType.Assignment,
+      variable,
+      value: this.parseExpression(tokens),
+    };
+  }
+
+  private eat(token: string, tokens: Token[]) {
     if (tokens[0].value === token) {
       tokens.shift();
     } else {

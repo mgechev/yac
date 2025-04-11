@@ -199,3 +199,28 @@ test('should allow function calls in expressions', () => {
   expect(expression.right.arguments[1].type).toBe('Number');
   expect(expression.right.arguments[1].value).toBe(3);
 });
+
+test('should allow parsing variable assignment', () => {
+  const program = `
+  a = a + 1;
+  `;
+
+  const ast = getAst(program);
+
+  expect(ast.type).toBe('Program');
+  expect(ast.body.length).toBe(1);
+
+  const assignment = ast.body[0] as any;
+
+  expect(assignment.type).toBe('Assignment');
+  expect(assignment.variable).toBe('a');
+
+  expect(assignment.value.type).toBe('BinaryExpression');
+  expect(assignment.value.operator.value).toBe('+');
+
+  expect(assignment.value.left.type).toBe('Identifier');
+  expect(assignment.value.left.name).toBe('a');
+
+  expect(assignment.value.right.type).toBe('Number');
+  expect(assignment.value.right.value)
+});

@@ -36,7 +36,7 @@ class GlobalScope extends Scope {
   constructor() {
     super();
     this.setFunction('log', {
-      type: NodeType.BuiltInFunction,
+      type: NodeType.BuiltInFunctionCall,
       name: 'log',
       body() {
         console.log(...arguments);
@@ -174,7 +174,7 @@ export class Interpreter {
 
   private evaluateFunctionCall(node: FunctionCallNode): number|boolean {
     const func = this.symbolTable.getFunction(node.name);
-    if (func.type === NodeType.BuiltInFunction) {
+    if (func.type === NodeType.BuiltInFunctionCall) {
       return func.body(...node.arguments.map(arg => this.evaluateBinaryExpression(arg)));
     }
     this.symbolTable.enterScope();
