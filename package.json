@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "start": "ts-node index.ts"
   },
   "repository": {
     "type": "git",
