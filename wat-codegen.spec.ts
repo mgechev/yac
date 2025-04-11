@@ -15,12 +15,16 @@ beforeEach(() => {
 
 const normalize = (str: string) => str.replace(/\n/g, "");
 
+const generateCode = (program: string) => {
+  const tokens = lexer.tokenize(program);
+  const ast = parser.parse(tokens);
+  return normalize(codegen.generate(ast));
+};
+
 test("generate empty programs", () => {
   const program = ``;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module)");
 });
@@ -28,9 +32,7 @@ test("generate empty programs", () => {
 test("generate simple expressions", () => {
   const program = `1 + 2`;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $main(f32.const 1)(f32.const 2)(f32.add)(drop)(return))(start $main))");
 });
@@ -38,9 +40,7 @@ test("generate simple expressions", () => {
 test("generate expressions with different operator presentence", () => {
   const program = `1 + 2 * 3`;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $main(f32.const 1)(f32.const 2)(f32.const 3)(f32.mul)(f32.add)(drop)(return))(start $main))");
 });
@@ -48,9 +48,7 @@ test("generate expressions with different operator presentence", () => {
 test("generate expressions with parentheses", () => {
   const program = `(1 + 2) * 3`;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $main(f32.const 1)(f32.const 2)(f32.add)(f32.const 3)(f32.mul)(drop)(return))(start $main))");
 });
@@ -58,9 +56,7 @@ test("generate expressions with parentheses", () => {
 test("generate expressions with nested parentheses", () => {
   const program = `((1 + 2) * 3) + 4`;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $main(f32.const 1)(f32.const 2)(f32.add)(f32.const 3)(f32.mul)(f32.const 4)(f32.add)(drop)(return))(start $main))");
 });
@@ -73,9 +69,7 @@ test("generate simple function declaration and call", () => {
     add(1, 2)
   `;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $add (param $a f32) (param $b f32) (result f32)(local.get $a)(local.get $b)(f32.add)(return))(func $main(f32.const 1)(f32.const 2)(call $add)(drop)(return))(start $main))");
 });
@@ -93,9 +87,7 @@ test("generate simple function declaration and calls between them", () => {
     addOne(1, 2)
   `;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $add (param $a f32) (param $b f32) (result f32)(local.get $a)(local.get $b)(f32.add)(return))(func $addOne (param $a f32) (result f32)(local.get $a)(f32.const 1)(call $add)(return))(func $main(f32.const 1)(f32.const 2)(call $addOne)(drop)(return))(start $main))");
 });
@@ -113,9 +105,7 @@ test('should work with conditional statements', () => {
     getBigger(1, 2)
   `;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $getBigger (param $a f32) (param $b f32) (result f32)(local.get $a)(local.get $b)(f32.gt)(if (result f32)(then(local.get $a)(return))(else(local.get $b)(return))))(func $main(f32.const 1)(f32.const 2)(call $getBigger)(drop)(return))(start $main))");
 });
@@ -135,9 +125,24 @@ test('should work with recursive functions', () => {
     fibonacci(10)
   `;
 
-  const tokens = lexer.tokenize(program);
-  const ast = parser.parse(tokens);
-  const generatedCode = normalize(codegen.generate(ast));
+  const generatedCode = generateCode(program);
 
   expect(generatedCode).toBe("(module(func $fibonacci (param $n f32) (result f32)(local.get $n)(f32.const 0)(f32.eq)(if(then(f32.const 0)(return)))(local.get $n)(f32.const 1)(f32.eq)(if(then(f32.const 1)(return)))(local.get $n)(f32.const 1)(f32.sub)(call $fibonacci)(local.get $n)(f32.const 2)(f32.sub)(call $fibonacci)(f32.add)(return))(func $main(f32.const 10)(call $fibonacci)(drop)(return))(start $main))");
+});
+
+test.skip('should work with simple while loops', () => {
+  const program = `
+    function iterate(a) {
+      while (a < 10) {
+        a = a + 1
+      }
+      return a
+    }
+
+    iterate(1)
+  `;
+
+  const generatedCode = generateCode(program);
+
+  expect(generatedCode).toBe("(module(func $iterate (param $a f32) (result f32)(loop $loop_0(local.get $a)(f32.const 10)(f32.lt)br_if $loop_0(local.get $a)(f32.const NaN)(local.get $a)(f32.const 1)(f32.add)(local.get $a)(return))(func $main(f32.const 1)(call $iterate)(drop)(return))(start $main))");
 });

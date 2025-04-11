@@ -2,14 +2,18 @@ import { expect, test } from "vitest";
 import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 
+const getAst = (program: string) => {
+  const lexer = new Lexer();
+  const tokens = lexer.tokenize(program);
+  const parser = new Parser();
+  return parser.parse(tokens);
+};
+
 test('should parse binary expressions', () => {
   const program = `
   (2 + 2) * 3
   `;
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -39,10 +43,7 @@ test('should parse function declarations', () => {
   }
   `;
 
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -73,10 +74,7 @@ test('should parse conditional statements', () => {
   }
   `;
 
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -107,10 +105,7 @@ test('should parse conditional statements without else blocks', () => {
   }
   `;
 
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -132,10 +127,7 @@ test('should parse while loops', () => {
     x
   }
   `;
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -160,10 +152,7 @@ test('should parse function calls', () => {
   add(1, 2)
   `;
 
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);
@@ -187,10 +176,7 @@ test('should allow function calls in expressions', () => {
   1 + add(2, 3)
   `;
 
-  const lexer = new Lexer();
-  const tokens = lexer.tokenize(program);
-  const parser = new Parser();
-  const ast = parser.parse(tokens);
+  const ast = getAst(program);
 
   expect(ast.type).toBe('Program');
   expect(ast.body.length).toBe(1);

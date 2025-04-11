@@ -15,6 +15,8 @@ import {
 } from "./parser";
 
 export class WebAssemblyTextCodegen {
+  private _loopCounter = 0;
+
   generate(node: Node): string {
     switch (node.type) {
       case "Program":
@@ -184,16 +186,15 @@ export class WebAssemblyTextCodegen {
   }
 
   private generateWhileStatement(node: WhileStatementNode): string {
-    let code = "(loop $loop\n";
+    const loopName = `$loop_${this._loopCounter++}`;
+    let code = `(loop ${loopName}\n`;
     code += this.generate(node.condition);
-    code += "(if (result i32)\n";
+    code += `br_if ${loopName}`;
     for (const statement of node.body) {
       code += this.generate(statement);
     }
-    code += ")\n";
-    code += "(br $loop)\n";
-    code += ")\n";
     return code;
+    
   }
 
   private generateBuiltInFunction(node: BuiltInFunctionCallNode): string {
